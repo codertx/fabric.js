@@ -117,14 +117,14 @@
      * @private
      * @param {CanvasRenderingContext2D} ctx context to render on
      */
-    _render: function(ctx) {
+    _render: function(ctx, matrix) {
       ctx.beginPath();
       ctx.arc(
-        0,
-        0,
-        this.radius,
-        this.startAngle,
-        this.endAngle, false);
+      matrix[4],
+      matrix[5],
+      this.radius * Math.hypot(matrix[0], matrix[1]),
+      this.startAngle,
+      this.endAngle, false);
       this._renderPaintInOrder(ctx);
     },
 
