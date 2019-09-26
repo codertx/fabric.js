@@ -117,8 +117,9 @@
      * @private
      * @param {CanvasRenderingContext2D} ctx context to render path on
      */
-    _renderPathCommands: function(ctx) {
+    _renderPathCommands: function(ctx, v) {
       var current, // current instruction
+          s = v[0],
           previous = null,
           subpathStartX = 0,
           subpathStartY = 0,
@@ -128,19 +129,25 @@
           controlY = 0, // current control point y
           tempX,
           tempY,
-          l = -this.pathOffset.x,
-          t = -this.pathOffset.y;
+          l = (-this.pathOffset.x * s + v[4]),
+          t = (-this.pathOffset.y * s + v[5]);
 
+      var s = v[0];
       ctx.beginPath();
 
       for (var i = 0, len = this.path.length; i < len; ++i) {
 
-        current = this.path[i];
+        current = this.path[i].map((val) => {
+            if(typeof val === 'number') {
+                return val * s;
+            }
+            return val;
+        });
 
         switch (current[0]) { // first letter
 
           case 'l': // lineto, relative
-            x += current[1];
+            x += current[1] ;
             y += current[2];
             ctx.lineTo(x + l, y + t);
             break;
@@ -423,8 +430,8 @@
      * @private
      * @param {CanvasRenderingContext2D} ctx context to render path on
      */
-    _render: function(ctx) {
-      this._renderPathCommands(ctx);
+    _render: function(ctx, v) {
+      this._renderPathCommands(ctx, v);
       this._renderPaintInOrder(ctx);
     },
 
