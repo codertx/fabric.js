@@ -937,8 +937,8 @@
 
       ctx.save();
       //apply viewport transform once for all rendering process
-      ctx.transform(v[0], v[1], v[2], v[3], v[4], v[5]);
-      this._renderObjects(ctx, objects);
+      // ctx.transform(v[0], v[1], v[2], v[3], v[4], v[5]);
+      this._renderObjects(ctx, objects, v.slice(0));
       ctx.restore();
       if (!this.controlsAboveOverlay && this.interactive) {
         this.drawControls(ctx);
@@ -983,10 +983,10 @@
      * @param {CanvasRenderingContext2D} ctx Context to render on
      * @param {Array} objects to render
      */
-    _renderObjects: function(ctx, objects) {
+    _renderObjects: function(ctx, objects, matrix) {
       var i, len;
       for (i = 0, len = objects.length; i < len; ++i) {
-        objects[i] && objects[i].render(ctx);
+        objects[i] && objects[i].render(ctx, matrix);
       }
     },
 
