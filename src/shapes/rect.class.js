@@ -76,21 +76,25 @@
      * @private
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
-    _render: function(ctx) {
-
+    _render: function(ctx, matrix) {
       // 1x1 case (used in spray brush) optimization was removed because
       // with caching and higher zoom level this makes more damage than help
-
       var rx = this.rx ? Math.min(this.rx, this.width / 2) : 0,
           ry = this.ry ? Math.min(this.ry, this.height / 2) : 0,
-          w = this.width,
-          h = this.height,
+          w = this.width * matrix[0],
+          h = this.height * matrix[3],
           x = -this.width / 2,
           y = -this.height / 2,
           isRounded = rx !== 0 || ry !== 0,
           /* "magic number" for bezier approximations of arcs (http://itc.ktu.lt/itc354/Riskus354.pdf) */
           k = 1 - 0.5522847498;
       ctx.beginPath();
+      const pos = fabric.util.transformPoint({
+          x: x,
+          y: y
+      }, matrix, false)
+      x = pos.x;
+      y = pos.y;
 
       ctx.moveTo(x + rx, y);
 
