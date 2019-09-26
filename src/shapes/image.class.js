@@ -494,7 +494,8 @@
      * @private
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
-    _render: function(ctx) {
+    _render: function(ctx, matrix) {
+        this._imgRenderingMatrix = matrix;
       if (this.isMoving !== true && this.resizeFilter && this._needsResize()) {
         this.applyResizeFilters();
       }
@@ -520,6 +521,7 @@
     },
 
     _renderFill: function(ctx) {
+        const v = this._imgRenderingMatrix;
       var elementToDraw = this._element,
           w = this.width, h = this.height,
           sW = Math.min(elementToDraw.naturalWidth || elementToDraw.width, w * this._filterScalingX),
@@ -527,8 +529,13 @@
           x = -w / 2, y = -h / 2,
           sX = Math.max(0, this.cropX * this._filterScalingX),
           sY = Math.max(0, this.cropY * this._filterScalingY);
+      var p = fabric.util.transformPoint({
+          x: x,
+          y: y
+      }, v);
+      var scale = v[0];
 
-      elementToDraw && ctx.drawImage(elementToDraw, sX, sY, sW, sH, x, y, w, h);
+      elementToDraw && ctx.drawImage(elementToDraw, sX, sY, sW, sH, p.x, p.y, w * scale, h * scale);
     },
 
     /**
