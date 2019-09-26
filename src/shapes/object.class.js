@@ -786,13 +786,14 @@
           additionalHeight = height * 0.1;
         }
       }
+      this._cacheMatrix = (this._cacheMatrix || [1, 0, 0, 1, 0, 0]);
       if (shouldRedraw) {
+        this._cacheMatrix = [1, 0, 0, 1, 0, 0];
         if (shouldResizeCanvas) {
           canvas.width = Math.ceil(width + additionalWidth);
           canvas.height = Math.ceil(height + additionalHeight);
         }
         else {
-          this._cacheContext.setTransform(1, 0, 0, 1, 0, 0);
           this._cacheContext.clearRect(0, 0, canvas.width, canvas.height);
         }
         drawingWidth = dims.x * zoomX / 2;
@@ -801,8 +802,8 @@
         this.cacheTranslationY = Math.round(canvas.height / 2 - drawingHeight) + drawingHeight;
         this.cacheWidth = width;
         this.cacheHeight = height;
-        this._cacheContext.translate(this.cacheTranslationX, this.cacheTranslationY);
-        this._cacheContext.scale(zoomX, zoomY);
+        this._cacheMatrix = fabric.util.multiplyTransformMatrices(this._cacheMatrix, [1, 0, 0, 1, this.cacheTranslationX, this.cacheTranslationY]);
+        this._cacheMatrix = fabric.util.multiplyTransformMatrices(this._cacheMatrix, [zoomX, 0, 0, zoomY, 0, 0]);
         this.zoomX = zoomX;
         this.zoomY = zoomY;
         return true;
@@ -835,7 +836,8 @@
       else {
         m = this.calcOwnMatrix();
       }
-      ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+      return m.slice(0);
+      // ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
     },
 
     /**
@@ -1060,7 +1062,7 @@
      * Renders an object on a specified context
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
-    render: function(ctx) {
+    render: function(ctx, globalMatrix) {
       // do not render if width/height are zeros or object is not visible
       if (this.isNotVisible()) {
         return;
@@ -1071,21 +1073,22 @@
       ctx.save();
       this._setupCompositeOperation(ctx);
       this.drawSelectionBackground(ctx);
-      this.transform(ctx);
+      var ownMatrix = this.transform(ctx);
       this._setOpacity(ctx);
       this._setShadow(ctx, this);
       if (this.transformMatrix) {
         ctx.transform.apply(ctx, this.transformMatrix);
       }
+      ownMatrix = fabric.util.multiplyTransformMatrices(globalMatrix, ownMatrix);
       this.clipTo && fabric.util.clipContext(this, ctx);
       if (this.shouldCache()) {
         this.renderCache();
-        this.drawCacheOnCanvas(ctx);
+        this.drawCacheOnCanvas(ctx, ownMatrix);
       }
       else {
         this._removeCacheCanvas();
         this.dirty = false;
-        this.drawObject(ctx);
+        this.drawObject(ctx, null, ownMatrix);
         if (this.objectCaching && this.statefullCache) {
           this.saveState({ propertySet: 'cacheProperties' });
         }
@@ -1101,7 +1104,7 @@
       }
       if (this.isCacheDirty()) {
         this.statefullCache && this.saveState({ propertySet: 'cacheProperties' });
-        this.drawObject(this._cacheContext, options.forClipping);
+        this.drawObject(this._cacheContext, options.forClipping, this._cacheMatrix);
         this.dirty = false;
       }
     },
@@ -1186,7 +1189,7 @@
      * Execute the drawing operation for an object on a specified context
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
-    drawObject: function(ctx, forClipping) {
+    drawObject: function(ctx, forClipping, matrix) {
       var originalFill = this.fill, originalStroke = this.stroke;
       if (forClipping) {
         this.fill = 'black';
@@ -1198,7 +1201,7 @@
         this._setStrokeStyles(ctx, this);
         this._setFillStyles(ctx, this);
       }
-      this._render(ctx);
+      this._render(ctx, matrix);
       this._drawClipPath(ctx);
       this.fill = originalFill;
       this.stroke = originalStroke;
@@ -1221,9 +1224,20 @@
      * Paint the cached copy of the object on the target context.
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
-    drawCacheOnCanvas: function(ctx) {
-      ctx.scale(1 / this.zoomX, 1 / this.zoomY);
-      ctx.drawImage(this._cacheCanvas, -this.cacheTranslationX, -this.cacheTranslationY);
+    drawCacheOnCanvas: function(ctx, matrix) {      
+      const v = fabric.util.multiplyTransformMatrices(
+          matrix,
+          [1 / this.zoomX, 0, 0, 1 / this.zoomY, 0, 0]
+      );
+      const p = fabric.util.transformPoint({
+        x: -this.cacheTranslationX,
+        y: -this.cacheTranslationY
+      }, v, false);
+      const width = this._cacheCanvas.width * Math.hypot(v[0], v[1]);
+      const height = this._cacheCanvas.height * Math.hypot(v[2], v[3]);
+
+      ctx.drawImage(this._cacheCanvas, p.x, p.y, width, height);
+      // ctx.drawImage(this._cacheCanvas, -this.cacheTranslationX, -this.cacheTranslationY);
     },
 
     /**
