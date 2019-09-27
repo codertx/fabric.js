@@ -81,8 +81,8 @@
       // with caching and higher zoom level this makes more damage than help
       var rx = this.rx ? Math.min(this.rx, this.width / 2) : 0,
           ry = this.ry ? Math.min(this.ry, this.height / 2) : 0,
-          w = this.width * matrix[0],
-          h = this.height * matrix[3],
+          w = this.width * (this.sizeUniform ? 1 : matrix[0]),
+          h = this.height * (this.sizeUniform? 1 : matrix[3]),
           x = -this.width / 2,
           y = -this.height / 2,
           isRounded = rx !== 0 || ry !== 0,
