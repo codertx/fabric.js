@@ -1163,7 +1163,7 @@
      * Execute the drawing operation for an object clipPath
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
-    drawClipPathOnCache: function(ctx) {
+    drawClipPathOnCache: function(ctx, matrix) {
       var path = this.clipPath;
       ctx.save();
       // DEBUG: uncomment this line, comment the following
@@ -1177,11 +1177,20 @@
       //ctx.scale(1 / 2, 1 / 2);
       if (path.absolutePositioned) {
         var m = fabric.util.invertTransform(this.calcTransformMatrix());
-        ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+        matrix = fabric.util.multiplyTransformMatrices(matrix, m);
       }
-      path.transform(ctx);
-      ctx.scale(1 / path.zoomX, 1 / path.zoomY);
-      ctx.drawImage(path._cacheCanvas, -path.cacheTranslationX, -path.cacheTranslationY);
+      var m = path.calcOwnMatrix();
+      matrix = fabric.util.multiplyTransformMatrices(matrix, m);
+      matrix = fabric.util.multiplyTransformMatrices(matrix, [1 / path.zoomX, 0, 0, 1 / path.zoomY, 0, 0]);
+
+      const p = fabric.util.transformPoint({
+        x: -path.cacheTranslationX,
+        y: -path.cacheTranslationY
+      }, matrix, false);
+      const width = path._cacheCanvas.width * Math.hypot(matrix[0], matrix[1]);
+      const height = path._cacheCanvas.height * Math.hypot(matrix[2], matrix[3]);
+    
+      ctx.drawImage(path._cacheCanvas, p.cacheTranslationX, p.cacheTranslationY);
       ctx.restore();
     },
 
@@ -1202,12 +1211,12 @@
         this._setFillStyles(ctx, this);
       }
       this._render(ctx, matrix);
-      this._drawClipPath(ctx);
+      this._drawClipPath(ctx, matrix);
       this.fill = originalFill;
       this.stroke = originalStroke;
     },
 
-    _drawClipPath: function(ctx) {
+    _drawClipPath: function(ctx, matrix) {
       var path = this.clipPath;
       if (!path) { return; }
       // needed to setup a couple of variables
@@ -1217,7 +1226,7 @@
       path.shouldCache();
       path._transformDone = true;
       path.renderCache({ forClipping: true });
-      this.drawClipPathOnCache(ctx);
+      this.drawClipPathOnCache(ctx, matrix);
     },
 
     /**
