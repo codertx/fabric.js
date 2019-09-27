@@ -151,18 +151,28 @@
      * @private
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
-    _render: function(ctx) {
+    _render: function(ctx, v) {
       ctx.beginPath();
 
       if (!this.strokeDashArray || this.strokeDashArray && supportsLineDash) {
         // move from center (of virtual box) to its left/top corner
         // we can't assume x1, y1 is top left and x2, y2 is bottom right
         var p = this.calcLinePoints();
-        ctx.moveTo(p.x1, p.y1);
-        ctx.lineTo(p.x2, p.y2);
+
+        var p1 = fabric.util.transformPoint({
+            x: p.x1,
+            y: p.y1
+        }, v);
+        var p2 = fabric.util.transformPoint({
+            x: p.x2,
+            y: p.y2
+        }, v);
+        
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
       }
 
-      ctx.lineWidth = this.strokeWidth;
+      ctx.lineWidth = this.strokeWidth * v[0];
 
       // TODO: test this
       // make sure setting "fill" changes color of a line
