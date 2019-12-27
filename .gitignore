@@ -7,3 +7,6 @@ before_commit
 .idea/
 /dist/fabric.require.js
 /dist/fabric.min.js.gz
+/dist/*
+fabric.js
+fabric.min.js
